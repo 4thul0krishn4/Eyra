@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eyra — Visual Image Memory</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .header {
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .search-container {
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid #2a2a3e;
+            border-radius: 12px;
+            background: #12121a;
+            color: #e0e0e0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+        .search-box button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .search-box button:hover { opacity: 0.9; }
+        .stats-bar {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+        .results {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            columns: 4;
+            column-gap: 1rem;
+        }
+        @media (max-width: 900px) { .results { columns: 3; } }
+        @media (max-width: 600px) { .results { columns: 2; } }
+        .result-card {
+            break-inside: avoid;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #12121a;
+            border: 1px solid #1a1a2e;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+            border-color: #667eea;
+        }
+        .result-card img {
+            width: 100%;
+            display: block;
+        }
+        .result-info {
+            padding: 0.6rem 0.8rem;
+        }
+        .result-info .filename {
+            font-size: 0.8rem;
+            color: #aaa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .result-info .similarity {
+            font-size: 0.75rem;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #555;
+        }
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .modal.active { display: flex; }
+        .modal img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+        .modal-close {
+            position: fixed;
+            top: 1rem; right: 1.5rem;
+            font-size: 2rem;
+            color: #fff;
+            cursor: pointer;
+            z-index: 101;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👁️ Eyra</h1>
+        <p>Local-first AI image memory — search by meaning, not filename</p>
+    </div>
+
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Describe what you're looking for... e.g. 'cat on a roof', 'sunset beach', 'robot outdoors'" autofocus>
+            <button onclick="search()">Search</button>
+        </div>
+        <div class="stats-bar" id="statsBar">Loading...</div>
+    </div>
+
+    <div class="results" id="results"></div>
+
+    <div class="modal" id="modal" onclick="closeModal()">
+        <span class="modal-close">&times;</span>
+        <img id="modalImg" src="" alt="">
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const searchInput = document.getElementById('searchInput');
+        const statsBar = document.getElementById('statsBar');
+
+        // Load stats on page load
+        fetch('/api/stats').then(r => r.json()).then(data => {
+            statsBar.textContent = `${data.total_images || 0} images indexed`;
+        }).catch(() => {
+            statsBar.textContent = 'Index not loaded — run: eyra index ~/Pictures';
+        });
+
+        // Load all images on page load
+        loadAllImages();
+
+        // Search on Enter
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') search();
+        });
+
+        async function loadAllImages() {
+            try {
+                const res = await fetch('/api/images?limit=200');
+                const data = await res.json();
+                if (data.images && data.images.length > 0) {
+                    renderResults(data.images.map(img => ({
+                        path: img.path,
+                        filename: img.filename,
+                        thumbnail: img.thumbnail,
+                        similarity: null,
+                    })));
+                } else {
+                    resultsDiv.innerHTML = '<div class="empty-state"><h2>No images indexed yet</h2><p>Run: <code>eyra index ~/Pictures</code></p></div>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="empty-state"><h2>Starting up...</h2><p>Make sure the server is running</p></div>';
+            }
+        }
+
+        async function search() {
+            const query = searchInput.value.trim();
+            if (!query) { loadAllImages(); return; }
+
+            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (data.results.length === 0) {
+                    resultsDiv.innerHTML = '<div class="empty-state"><h2>No results</h2><p>Try a different query</p></div>';
+                    return;
+                }
+
+                renderResults(data.results);
+                statsBar.textContent = `${data.count} results for "${query}"`;
+            } catch (e) {
+                resultsDiv.innerHTML = '<div class="empty-state"><h2>Error</h2><p>Search failed</p></div>';
+            }
+        }
+
+        function renderResults(items) {
+            resultsDiv.innerHTML = items.map((item, i) => `
+                <div class="result-card" onclick="openModal('${item.path}')">
+                    <img src="${item.thumbnail || '/api/thumbnail?path=' + encodeURIComponent(item.path)}"
+                         alt="${item.filename || ''}"
+                         loading="lazy">
+                    <div class="result-info">
+                        <div class="filename">${item.filename || ''}</div>
+                        ${item.similarity !== null ? `<div class="similarity">${(item.similarity * 100).toFixed(1)}% match</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(path) {
+            document.getElementById('modalImg').src = '/api/image?path=' + encodeURIComponent(path);
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>
