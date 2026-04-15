@@ -60,7 +60,7 @@ eyra stats                             # Show index statistics
 eyra serve                             # Start web UI at localhost:8080
 ```
 
-## Auto-Tagging (Phase 2)
+## Auto-Tagging
 
 Eyra uses vision-language models to generate natural language captions and descriptive tags for every image:
 
