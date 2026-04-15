@@ -25,6 +25,13 @@ COLLECTION_NAME = "eyra_images"
 # Thumbnail settings
 THUMBNAIL_SIZE = (256, 256)
 
+# Captioning model settings
+CAPTION_MODEL = "microsoft/Florence-2-base"
+CAPTION_BACKEND = "florence2"  # "florence2" or "blip2"
+CAPTION_MODEL_DIR = EYRA_DIR / "caption_models"
+CAPTION_MAX_TAGS = 15
+CAPTION_DEVICE = ""  # auto-detect: "mps", "cuda", "cpu", or "" for auto
+
 # Search defaults
 DEFAULT_RESULTS = 20
 
@@ -35,5 +42,5 @@ DEFAULT_PORT = 8080
 
 def ensure_dirs():
     """Create all required directories."""
-    for d in [EYRA_DIR, DB_DIR, MODELS_DIR, THUMBNAILS_DIR]:
+    for d in [EYRA_DIR, DB_DIR, MODELS_DIR, THUMBNAILS_DIR, CAPTION_MODEL_DIR]:
         d.mkdir(parents=True, exist_ok=True)

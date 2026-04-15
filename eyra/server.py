@@ -40,16 +40,24 @@ def create_app() -> FastAPI:
         q: str = Query(..., description="Search query"),
         limit: int = Query(DEFAULT_RESULTS, ge=1, le=100),
         min_similarity: float = Query(0.1, ge=0.0, le=1.0),
+        mode: str = Query("hybrid", description="Search mode: hybrid, vector, keyword"),
     ):
         """Search images by natural language."""
-        results = engine.search(query=q, n_results=limit, min_similarity=min_similarity)
+        results = engine.search(query=q, n_results=limit, min_similarity=min_similarity, mode=mode)
 
-        # Add thumbnail URLs
+        # Add thumbnail URLs and extract caption/tags
         for r in results:
             thumb = generate_thumbnail(r["path"])
             r["thumbnail"] = f"/api/thumbnail?path={r['path']}" if thumb else None
             r["similarity"] = round(r["similarity"], 4)
             r["filename"] = r["metadata"].get("filename", "")
+            # Surface caption and tags at top level
+            r["caption"] = r["metadata"].get("caption", "")
+            tags_str = r["metadata"].get("tags", "[]")
+            try:
+                r["tags"] = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
+            except (json.JSONDecodeError, TypeError):
+                r["tags"] = []
 
         return {"query": q, "results": results, "count": len(results)}
 
@@ -66,6 +74,12 @@ def create_app() -> FastAPI:
             r["thumbnail"] = f"/api/thumbnail?path={r['path']}" if thumb else None
             r["similarity"] = round(r["similarity"], 4)
             r["filename"] = r["metadata"].get("filename", "")
+            r["caption"] = r["metadata"].get("caption", "")
+            tags_str = r["metadata"].get("tags", "[]")
+            try:
+                r["tags"] = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
+            except (json.JSONDecodeError, TypeError):
+                r["tags"] = []
 
         return {"reference": path, "results": results, "count": len(results)}
 
@@ -87,6 +101,12 @@ def create_app() -> FastAPI:
             thumb = generate_thumbnail(img["path"])
             img["thumbnail"] = f"/api/thumbnail?path={img['path']}" if thumb else None
             img["filename"] = img["metadata"].get("filename", "")
+            img["caption"] = img["metadata"].get("caption", "")
+            tags_str = img["metadata"].get("tags", "[]")
+            try:
+                img["tags"] = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
+            except (json.JSONDecodeError, TypeError):
+                img["tags"] = []
 
         return {"images": page, "total": len(all_images), "offset": offset, "limit": limit}
 
@@ -101,6 +121,28 @@ def create_app() -> FastAPI:
         if original.exists():
             return FileResponse(str(original))
         raise HTTPException(status_code=404, detail="Image not found")
+
+    @app.get("/api/caption")
+    async def api_caption(
+        path: str = Query(..., description="Path to image to caption"),
+        backend: str = Query("florence2", description="Captioning backend"),
+    ):
+        """Generate caption and tags for a single image on-demand."""
+        img_path = Path(path).resolve()
+        if not img_path.exists():
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        from .captioner import Captioner
+        captioner = Captioner(backend=backend)
+        desc = captioner.describe(str(img_path))
+
+        return {
+            "path": str(img_path),
+            "caption": desc["caption"],
+            "tags": desc["tags"],
+            "backend": desc["backend"],
+            "model": desc["model"],
+        }
 
     @app.get("/api/image")
     async def api_image(path: str = Query(...)):

@@ -40,6 +40,8 @@ dependencies = [
     "jinja2>=3.1.0",
     "aiofiles>=23.0.0",
     "numpy>=1.24.0",
+    "transformers>=4.36.0",
+    "accelerate>=0.25.0",
 ]
 
 [project.optional-dependencies]
