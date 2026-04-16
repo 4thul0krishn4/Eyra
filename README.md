@@ -66,11 +66,7 @@ eyra serve                             # Start web UI at localhost:8080
 
 ## Auto-Tagging
 
-Eyra uses vision-language models to generate natural language captions and descriptive tags for every image:
-
-- **BLIP** (default) — Salesforce's lightweight captioning model, fast on Apple Silicon
-- **Florence-2** — Microsoft's multi-task vision model (requires compatible transformers version)
-- **BLIP-2** — heavier model, higher quality captions (requires more RAM)
+Eyra uses BLIP (Salesforce's lightweight vision model) to generate natural language captions and descriptive tags for every image. It's fast on Apple Silicon and produces accurate results.
 
 ### Indexing with captions
 
@@ -80,9 +76,6 @@ eyra index ~/Pictures --auto-caption
 
 # Caption already-indexed images
 eyra caption ~/Pictures
-
-# Use a different backend
-eyra caption ~/Pictures --backend blip2
 ```
 
 ### Hybrid Search
