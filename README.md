@@ -7,7 +7,7 @@ Instead of relying on filenames or manual organization, Eyra uses vision models 
 ## Features
 
 - 🔍 **Semantic search** — find images by describing what you're looking for
-- 🏷️ **Auto-tagging** — AI generates tags and captions for every image (Florence-2 / BLIP-2)
+- 🏷️ **Auto-tagging** — AI generates tags and captions for every image (BLIP)
 - 🔀 **Hybrid search** — combines vector similarity + keyword matching for best results
 - 📂 **Folder indexing** — point it at any folder, it handles the rest
 - 👁️ **File watching** — automatically indexes new images as they appear
@@ -23,10 +23,11 @@ cd Eyra
 ./setup.sh
 ```
 
-Then index your images:
+Then index your images (with auto-captioning):
 
 ```bash
-eyra index ~/Pictures
+source venv/bin/activate
+eyra index ~/Pictures --auto-caption
 ```
 
 Search:
@@ -47,7 +48,7 @@ Open http://localhost:8080 in your browser.
 
 ```
 eyra index <folder>                    # Index all images in a folder
-eyra index <folder> --auto-caption     # Index with auto-captioning (Florence-2)
+eyra index <folder> --auto-caption     # Index with auto-captioning (BLIP)
 eyra index <folder> --background       # Index in background (server must be running)
 eyra search <query>                    # Search (hybrid by default)
 eyra search <query> --mode vector      # Vector-only search
@@ -67,8 +68,9 @@ eyra serve                             # Start web UI at localhost:8080
 
 Eyra uses vision-language models to generate natural language captions and descriptive tags for every image:
 
-- **Florence-2** (default) — Microsoft's lightweight multi-task vision model, fast on CPU
-- **BLIP-2** — Salesforce's heavier model, higher quality captions
+- **BLIP** (default) — Salesforce's lightweight captioning model, fast on Apple Silicon
+- **Florence-2** — Microsoft's multi-task vision model (requires compatible transformers version)
+- **BLIP-2** — heavier model, higher quality captions (requires more RAM)
 
 ### Indexing with captions
 
@@ -79,7 +81,7 @@ eyra index ~/Pictures --auto-caption
 # Caption already-indexed images
 eyra caption ~/Pictures
 
-# Use BLIP-2 instead of Florence-2
+# Use a different backend
 eyra caption ~/Pictures --backend blip2
 ```
 
@@ -145,7 +147,7 @@ The web UI supports:
 
 1. **Scan** — finds all images in the folder (JPG, PNG, WebP, HEIC, etc.)
 2. **Embed** — generates CLIP embeddings (vector representations) for each image
-3. **Caption** (optional) — vision model generates captions and tags for each image
+3. **Caption** (optional) — BLIP generates captions and tags for each image
 4. **Store** — saves embeddings + metadata in a local ChromaDB vector database
 5. **Search** — hybrid search: combines vector similarity with keyword matching
 
@@ -160,6 +162,7 @@ Everything runs on your machine. No API calls, no cloud, no tracking.
 ## Tech Stack
 
 - OpenCLIP — open-source CLIP model for image/text embeddings
+- BLIP — lightweight vision model for captioning and tagging
 - ChromaDB — local vector database
 - FastAPI — web backend
 - Typer + Rich — beautiful CLI
