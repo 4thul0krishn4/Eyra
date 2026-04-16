@@ -1,4 +1,7 @@
-"""Vector database indexer — stores and retrieves image embeddings using ChromaDB."""
+"""Vector database indexer — stores and retrieves image embeddings using ChromaDB.
+
+Sidecar: metadata is also stored in SQLite (via MetadataStore) for fast filtering.
+"""
 
 import json
 from pathlib import Path
@@ -8,6 +11,7 @@ import chromadb
 import numpy as np
 
 from .config import COLLECTION_NAME, DB_DIR
+from .metadata import MetadataStore
 
 
 class Indexer:
@@ -17,6 +21,7 @@ class Indexer:
         self.db_path = str(db_path or DB_DIR)
         self.client = None
         self.collection = None
+        self.metadata_store = MetadataStore()
 
     def connect(self):
         """Connect to the vector database."""
@@ -51,6 +56,26 @@ class Indexer:
             metadatas=[self._clean_metadata(metadata)],
         )
 
+        # Sync to SQLite sidecar
+        tags = metadata.get("tags", [])
+        if isinstance(tags, str):
+            try:
+                tags = json.loads(tags)
+            except (json.JSONDecodeError, TypeError):
+                tags = []
+
+        self.metadata_store.add_image(
+            path=image_id,
+            filename=metadata.get("filename", Path(image_id).name),
+            size_bytes=metadata.get("size_bytes", 0),
+            width=metadata.get("width", 0),
+            height=metadata.get("height", 0),
+            fmt=metadata.get("format", ""),
+            caption=metadata.get("caption", ""),
+            tags=tags,
+            modified=metadata.get("modified", ""),
+        )
+
     def add_batch(
         self,
         image_ids: list[str],
@@ -65,6 +90,30 @@ class Indexer:
             embeddings=[e.tolist() for e in embeddings],
             metadatas=[self._clean_metadata(m) for m in metadatas],
         )
+
+        # Batch sync to SQLite sidecar
+        records = []
+        for img_id, meta in zip(image_ids, metadatas):
+            tags = meta.get("tags", [])
+            if isinstance(tags, str):
+                try:
+                    tags = json.loads(tags)
+                except (json.JSONDecodeError, TypeError):
+                    tags = []
+
+            records.append({
+                "path": img_id,
+                "filename": meta.get("filename", Path(img_id).name),
+                "size_bytes": meta.get("size_bytes", 0),
+                "width": meta.get("width", 0),
+                "height": meta.get("height", 0),
+                "format": meta.get("format", ""),
+                "caption": meta.get("caption", ""),
+                "tags": tags,
+                "modified": meta.get("modified", ""),
+            })
+
+        self.metadata_store.add_batch(records)
 
     def search(
         self,
@@ -122,6 +171,7 @@ class Indexer:
         """Remove an image from the index."""
         self.connect()
         self.collection.delete(ids=[image_id])
+        self.metadata_store.delete_image(image_id)
 
     def exists(self, image_id: str) -> bool:
         """Check if an image is already indexed."""
