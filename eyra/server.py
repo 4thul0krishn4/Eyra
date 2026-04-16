@@ -10,7 +10,9 @@ from fastapi.staticfiles import StaticFiles
 from .config import DEFAULT_RESULTS, THUMBNAILS_DIR, ensure_dirs
 from .embedder import Embedder
 from .indexer import Indexer
+from .metadata import MetadataStore
 from .search import SearchEngine
+from .tasks import get_task_queue
 from .thumbnails import generate_thumbnail
 
 
@@ -18,9 +20,10 @@ def create_app() -> FastAPI:
     """Create and configure the FastAPI app."""
     ensure_dirs()
 
-    app = FastAPI(title="Eyra", version="0.1.0")
+    app = FastAPI(title="Eyra", version="0.3.0")
     embedder = Embedder()
     indexer = Indexer()
+    meta = indexer.metadata_store
     engine = SearchEngine(indexer, embedder)
 
     # Web UI HTML
@@ -85,30 +88,62 @@ def create_app() -> FastAPI:
 
     @app.get("/api/stats")
     async def api_stats():
-        """Get index statistics."""
-        return engine.stats()
+        """Get index statistics (fast, from SQLite)."""
+        return meta.stats()
+
+    @app.get("/api/tags")
+    async def api_tags(
+        min_count: int = Query(1, ge=1, description="Minimum tag occurrence count"),
+        limit: int = Query(100, ge=1, le=500),
+    ):
+        """Get all tags with their counts."""
+        return {"tags": meta.all_tags(min_count=min_count, limit=limit)}
+
+    @app.get("/api/search/text")
+    async def api_fts_search(
+        q: str = Query(..., description="Full-text search query"),
+        limit: int = Query(50, ge=1, le=200),
+        offset: int = Query(0, ge=0),
+    ):
+        """Full-text search on captions and tags (SQLite FTS5)."""
+        result = meta.search(q, limit=limit, offset=offset)
+
+        for img in result["images"]:
+            thumb = generate_thumbnail(img["path"])
+            img["thumbnail"] = f"/api/thumbnail?path={img['path']}" if thumb else None
+
+        return result
 
     @app.get("/api/images")
     async def api_images(
         limit: int = Query(50, ge=1, le=200),
         offset: int = Query(0, ge=0),
+        order_by: str = Query("indexed_at", description="Sort field: indexed_at, filename, size_bytes, width, height, modified"),
+        order_dir: str = Query("DESC", description="Sort direction: ASC or DESC"),
+        fmt: str = Query(None, description="Filter by image format (JPEG, PNG, etc.)"),
+        min_width: int = Query(None, description="Minimum image width in pixels"),
+        min_height: int = Query(None, description="Minimum image height in pixels"),
+        has_caption: bool = Query(None, description="Filter to captioned/uncaptioned images"),
+        tag: str = Query(None, description="Filter by tag"),
     ):
-        """Get all indexed images with pagination."""
-        all_images = indexer.get_all()
-        page = all_images[offset:offset + limit]
+        """Get indexed images with filtering and pagination (powered by SQLite)."""
+        result = meta.list_images(
+            offset=offset,
+            limit=limit,
+            order_by=order_by,
+            order_dir=order_dir,
+            fmt=fmt,
+            min_width=min_width,
+            min_height=min_height,
+            has_caption=has_caption,
+            tag=tag,
+        )
 
-        for img in page:
+        for img in result["images"]:
             thumb = generate_thumbnail(img["path"])
             img["thumbnail"] = f"/api/thumbnail?path={img['path']}" if thumb else None
-            img["filename"] = img["metadata"].get("filename", "")
-            img["caption"] = img["metadata"].get("caption", "")
-            tags_str = img["metadata"].get("tags", "[]")
-            try:
-                img["tags"] = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
-            except (json.JSONDecodeError, TypeError):
-                img["tags"] = []
 
-        return {"images": page, "total": len(all_images), "offset": offset, "limit": limit}
+        return result
 
     @app.get("/api/thumbnail")
     async def api_thumbnail(path: str = Query(...)):
@@ -158,5 +193,70 @@ def create_app() -> FastAPI:
         }
         media_type = media_types.get(img_path.suffix.lower(), "image/jpeg")
         return FileResponse(str(img_path), media_type=media_type)
+
+    # --- Background Task Endpoints ---
+
+    @app.post("/api/tasks/index")
+    async def api_task_index(
+        folder: str = Query(..., description="Folder to index"),
+        batch_size: int = Query(32, ge=1, le=128),
+        auto_caption: bool = Query(False, description="Also generate captions"),
+        backend: str = Query("florence2", description="Captioning backend"),
+    ):
+        """Submit a background indexing task."""
+        queue = get_task_queue()
+        task_id = queue.submit("index", {
+            "folder": folder,
+            "batch_size": batch_size,
+            "auto_caption": auto_caption,
+            "backend": backend,
+        })
+        return {"task_id": task_id, "status": "submitted"}
+
+    @app.post("/api/tasks/caption")
+    async def api_task_caption(
+        folder: str = Query("", description="Folder to caption (empty = all)"),
+        backend: str = Query("florence2"),
+        reindex: bool = Query(False, description="Re-caption existing"),
+        limit: int = Query(0, ge=0, description="Max images (0 = all)"),
+    ):
+        """Submit a background captioning task."""
+        queue = get_task_queue()
+        task_id = queue.submit("caption", {
+            "folder": folder,
+            "backend": backend,
+            "reindex": reindex,
+            "limit": limit,
+        })
+        return {"task_id": task_id, "status": "submitted"}
+
+    @app.get("/api/tasks")
+    async def api_tasks():
+        """Get all active tasks."""
+        queue = get_task_queue()
+        return {"tasks": queue.get_active_tasks()}
+
+    @app.get("/api/tasks/history")
+    async def api_task_history(limit: int = Query(20, ge=1, le=100)):
+        """Get recent task history."""
+        queue = get_task_queue()
+        return {"tasks": queue.get_recent_tasks(limit=limit)}
+
+    @app.get("/api/tasks/{task_id}")
+    async def api_task_status(task_id: str):
+        """Get status of a specific task."""
+        queue = get_task_queue()
+        task = queue.get_task(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return task
+
+    @app.delete("/api/tasks/{task_id}")
+    async def api_task_cancel(task_id: str):
+        """Cancel a pending task."""
+        queue = get_task_queue()
+        if queue.cancel(task_id):
+            return {"cancelled": True}
+        raise HTTPException(status_code=400, detail="Task not found or already running")
 
     return app
