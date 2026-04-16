@@ -48,6 +48,7 @@ Open http://localhost:8080 in your browser.
 ```
 eyra index <folder>                    # Index all images in a folder
 eyra index <folder> --auto-caption     # Index with auto-captioning (Florence-2)
+eyra index <folder> --background       # Index in background (server must be running)
 eyra search <query>                    # Search (hybrid by default)
 eyra search <query> --mode vector      # Vector-only search
 eyra search <query> --mode keyword     # Tag/caption keyword search
@@ -56,7 +57,9 @@ eyra similar <image>                   # Find visually similar images
 eyra caption <folder>                  # Auto-tag/caption already-indexed images
 eyra watch <folder>                    # Watch folder for new images
 eyra watch <folder> --auto-caption     # Watch with auto-captioning
-eyra stats                             # Show index statistics
+eyra stats                             # Show index statistics (from SQLite)
+eyra sync                              # Sync SQLite metadata from ChromaDB
+eyra tasks                             # Check background task status
 eyra serve                             # Start web UI at localhost:8080
 ```
 
@@ -87,6 +90,56 @@ By default, search combines:
 - **Keyword matching** (40%) — matches against generated tags and captions
 
 This means searching for "robot" will find images tagged with "robot" even if the visual embedding alone might miss them. Use `--mode vector` or `--mode keyword` to search with only one method.
+
+## Performance & Scale
+
+Eyra is built to handle thousands of images without breaking a sweat.
+
+### SQLite Sidecar Database
+
+Metadata is stored in SQLite alongside ChromaDB's vectors. This enables:
+- **Fast filtering** by format, dimensions, tags, caption status
+- **Full-text search** (FTS5) on captions and tags
+- **Instant stats** without loading all vectors
+- **Proper pagination** with accurate total counts
+
+```bash
+# View detailed stats (from SQLite)
+eyra stats
+
+# Backfill SQLite from existing ChromaDB index (one-time upgrade)
+eyra sync
+```
+
+### Background Indexing
+
+Index large folders without blocking the UI:
+
+```bash
+# Submit a background task (server must be running)
+eyra index ~/Pictures --background
+
+# Check task status
+eyra tasks
+```
+
+Or use the web API directly:
+```bash
+# Start indexing
+curl -X POST "http://localhost:8080/api/tasks/index?folder=~/Pictures&auto_caption=true"
+
+# Check status
+curl http://localhost:8080/api/tasks
+```
+
+### Web UI Features
+
+The web UI supports:
+- **Infinite scroll** — loads 50 images at a time, no lag on large collections
+- **Format/dimensions sorting** — sort by newest, filename, file size, width, height
+- **Filters** — show only captioned/uncaptioned, specific formats
+- **Task monitoring** — live progress bars for background indexing/captioning
+- **Keyboard navigation** — arrow keys in the lightbox modal
 
 ## How It Works
 
