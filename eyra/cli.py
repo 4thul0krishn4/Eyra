@@ -40,14 +40,41 @@ def index(
     batch_size: int = typer.Option(32, "--batch-size", "-b", help="Batch size for embedding generation"),
     auto_caption: bool = typer.Option(False, "--auto-caption", "-c", help="Generate captions and tags during indexing"),
     backend: str = typer.Option(CAPTION_BACKEND, "--backend", help="Captioning backend: florence2 or blip2"),
+    background: bool = typer.Option(False, "--background", "-g", help="Run indexing in background (server must be running)"),
 ):
     """Index all images in a folder for search."""
-    embedder, indexer, _ = get_components()
-
     folder_path = Path(folder).expanduser().resolve()
     if not folder_path.exists():
         console.print(f"[red]Error:[/red] Folder not found: {folder_path}")
         raise typer.Exit(1)
+
+    if background:
+        import urllib.request
+        import urllib.parse
+
+        params = urllib.parse.urlencode({
+            "folder": str(folder_path),
+            "batch_size": batch_size,
+            "auto_caption": auto_caption,
+            "backend": backend,
+        })
+        url = f"http://{DEFAULT_HOST}:{DEFAULT_PORT}/api/tasks/index?{params}"
+
+        try:
+            req = urllib.request.Request(url, method="POST")
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read())
+            console.print(f"\n[bold]Eyra Index (Background)[/bold]")
+            console.print(f"  Task submitted: {data['task_id']}")
+            console.print(f"  Check status: curl http://{DEFAULT_HOST}:{DEFAULT_PORT}/api/tasks/{data['task_id']}")
+            console.print(f"  Or visit the web UI\n")
+        except Exception as e:
+            console.print(f"[red]Failed to submit task:[/red] {e}")
+            console.print(f"[dim]Is the server running? Start with: eyra serve[/dim]")
+        return
+
+    # Synchronous indexing (existing logic)
+    embedder, indexer, _ = get_components()
 
     # Count images first
     total = count_images(folder_path)
@@ -265,17 +292,118 @@ def tags(
 @app.command()
 def stats():
     """Show index statistics."""
-    _, _, engine = get_components()
+    from .metadata import MetadataStore
 
-    info = engine.stats()
+    meta = MetadataStore()
+    info = meta.stats()
 
     console.print(f"\n[bold]Eyra Stats[/bold]\n")
     console.print(f"  Total indexed images: {info['total_images']}")
+    console.print(f"  Captioned: {info['captioned']}, Uncaptioned: {info['uncaptioned']}")
+
+    if info["total_size_bytes"] > 0:
+        size_mb = info["total_size_bytes"] / (1024 * 1024)
+        avg_kb = info["avg_size_bytes"] / 1024
+        console.print(f"  Total size: {size_mb:.1f} MB (avg {avg_kb:.0f} KB/image)")
+
+    if info["formats"]:
+        console.print(f"\n  Formats:")
+        for fmt, count in info["formats"].items():
+            console.print(f"    {fmt}: {count}")
 
     if info["top_tags"]:
         console.print(f"\n  Top tags:")
-        for tag, count in info["top_tags"][:10]:
-            console.print(f"    {tag}: {count}")
+        for t in info["top_tags"][:10]:
+            console.print(f"    {t['tag']}: {t['count']}")
+
+
+@app.command()
+def sync():
+    """Sync SQLite metadata from ChromaDB (backfill for upgrades)."""
+    from .metadata import MetadataStore
+
+    _, indexer, _ = get_components()
+    meta = MetadataStore()
+
+    console.print(f"\n[bold]Eyra Sync[/bold]")
+    console.print(f"  Syncing SQLite metadata from ChromaDB...\n")
+
+    all_images = indexer.get_all()
+    total = len(all_images)
+
+    if total == 0:
+        console.print("[yellow]No images in ChromaDB index.[/yellow]")
+        raise typer.Exit(0)
+
+    records = []
+    for img in all_images:
+        meta_d = img.get("metadata", {})
+        tags_str = meta_d.get("tags", "[]")
+        try:
+            tags = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
+        except (json.JSONDecodeError, TypeError):
+            tags = []
+
+        records.append({
+            "path": img["path"],
+            "filename": meta_d.get("filename", Path(img["path"]).name),
+            "size_bytes": meta_d.get("size_bytes", 0),
+            "width": meta_d.get("width", 0),
+            "height": meta_d.get("height", 0),
+            "format": meta_d.get("format", ""),
+            "caption": meta_d.get("caption", ""),
+            "tags": tags,
+            "modified": meta_d.get("modified", ""),
+        })
+
+    meta.add_batch(records)
+
+    console.print(f"[green]✅ Synced {total} images to SQLite metadata store.[/green]")
+
+
+@app.command()
+def tasks(
+    task_id: str = typer.Argument(None, help="Task ID to check (omit to list active)"),
+):
+    """Check background task status (requires running server)."""
+    import urllib.request
+
+    base = f"http://{DEFAULT_HOST}:{DEFAULT_PORT}/api/tasks"
+
+    try:
+        if task_id:
+            url = f"{base}/{task_id}"
+        else:
+            url = base
+
+        with urllib.request.urlopen(url) as resp:
+            data = json.loads(resp.read())
+
+        if task_id:
+            # Single task
+            t = data
+            console.print(f"\n[bold]Task: {t['task_id']}[/bold]")
+            console.print(f"  Type: {t['type']}")
+            console.print(f"  Status: {t['status']}")
+            if t['total'] > 0:
+                console.print(f"  Progress: {t['progress']}/{t['total']} ({t['percent']}%)")
+            if t['message']:
+                console.print(f"  Message: {t['message']}")
+            if t['error']:
+                console.print(f"  [red]Error: {t['error']}[/red]")
+        else:
+            tasks_list = data.get("tasks", [])
+            if not tasks_list:
+                console.print("[dim]No active tasks.[/dim]")
+            else:
+                console.print(f"\n[bold]Active Tasks[/bold]\n")
+                for t in tasks_list:
+                    pct = f" ({t['percent']}%)" if t['total'] > 0 else ""
+                    console.print(f"  {t['task_id']}: {t['status']}{pct} — {t.get('message', '')}")
+
+    except Exception as e:
+        console.print(f"[red]Failed to connect:[/red] {e}")
+        console.print(f"[dim]Is the server running? Start with: eyra serve[/dim]")
 
 
 @app.command()
