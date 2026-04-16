@@ -12,26 +12,34 @@
             color: #e0e0e0;
             min-height: 100vh;
         }
+
+        /* Header */
         .header {
-            padding: 2rem;
+            padding: 1.5rem 2rem;
             text-align: center;
             border-bottom: 1px solid #1a1a2e;
+            position: sticky;
+            top: 0;
+            background: #0a0a0f;
+            z-index: 50;
         }
         .header h1 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
         }
         .header p {
             color: #888;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
+
+        /* Search */
         .search-container {
             max-width: 700px;
-            margin: 2rem auto;
+            margin: 1.5rem auto;
             padding: 0 1rem;
         }
         .search-box {
@@ -41,45 +49,45 @@
         }
         .search-box input {
             flex: 1;
-            padding: 0.8rem 1.2rem;
+            padding: 0.7rem 1rem;
             border: 1px solid #2a2a3e;
-            border-radius: 12px;
+            border-radius: 10px;
             background: #12121a;
             color: #e0e0e0;
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
             transition: border-color 0.2s;
         }
-        .search-box input:focus {
-            border-color: #667eea;
-        }
+        .search-box input:focus { border-color: #667eea; }
         .search-box button {
-            padding: 0.8rem 1.5rem;
+            padding: 0.7rem 1.2rem;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: opacity 0.2s;
         }
         .search-box button:hover { opacity: 0.9; }
+
+        /* Mode Toggle */
         .mode-toggle {
             display: flex;
             gap: 0;
             border: 1px solid #2a2a3e;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
-            margin-top: 0.75rem;
+            margin-top: 0.6rem;
             justify-content: center;
         }
         .mode-btn {
-            padding: 0.4rem 1rem;
+            padding: 0.35rem 0.8rem;
             background: transparent;
             color: #888;
             border: none;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             transition: all 0.2s;
         }
         .mode-btn.active {
@@ -87,12 +95,84 @@
             color: white;
         }
         .mode-btn:hover:not(.active) { color: #ccc; }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .filter-bar select, .filter-bar input[type="number"] {
+            padding: 0.3rem 0.5rem;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            background: #12121a;
+            color: #ccc;
+            font-size: 0.75rem;
+            outline: none;
+        }
+        .filter-bar select:focus, .filter-bar input[type="number"]:focus {
+            border-color: #667eea;
+        }
+
+        /* Stats Bar */
         .stats-bar {
             text-align: center;
             color: #666;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            margin: 0.5rem 0;
         }
+
+        /* Task Panel */
+        .task-panel {
+            max-width: 700px;
+            margin: 0 auto 0.5rem;
+            padding: 0 1rem;
+        }
+        .task-card {
+            background: #12121a;
+            border: 1px solid #2a2a3e;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 0.4rem;
+            font-size: 0.8rem;
+        }
+        .task-card .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+        .task-card .task-type {
+            color: #667eea;
+            font-weight: 600;
+        }
+        .task-card .task-status {
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+        }
+        .task-status.running { background: #1a3a2e; color: #4ade80; }
+        .task-status.pending { background: #3a3a1e; color: #facc15; }
+        .task-status.completed { background: #1a2a3e; color: #60a5fa; }
+        .task-status.failed { background: #3a1a1e; color: #f87171; }
+        .task-progress-bar {
+            height: 4px;
+            background: #1a1a2e;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.3rem;
+        }
+        .task-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+        .task-message { color: #888; margin-top: 0.2rem; }
+
+        /* Results Grid */
         .results {
             max-width: 1200px;
             margin: 0 auto;
@@ -102,10 +182,11 @@
         }
         @media (max-width: 900px) { .results { columns: 3; } }
         @media (max-width: 600px) { .results { columns: 2; } }
+
         .result-card {
             break-inside: avoid;
             margin-bottom: 1rem;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             background: #12121a;
             border: 1px solid #1a1a2e;
@@ -121,24 +202,24 @@
             display: block;
         }
         .result-info {
-            padding: 0.6rem 0.8rem;
+            padding: 0.5rem 0.7rem;
         }
         .result-info .filename {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #aaa;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .result-info .similarity {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #667eea;
             font-weight: 600;
         }
         .result-info .caption {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #bbb;
-            margin-top: 0.3rem;
+            margin-top: 0.2rem;
             line-height: 1.3;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -148,31 +229,59 @@
         .result-info .tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.25rem;
-            margin-top: 0.35rem;
+            gap: 0.2rem;
+            margin-top: 0.25rem;
         }
         .result-info .tag {
-            font-size: 0.65rem;
-            padding: 0.1rem 0.4rem;
+            font-size: 0.6rem;
+            padding: 0.1rem 0.35rem;
             background: #1a1a2e;
-            border-radius: 6px;
+            border-radius: 5px;
             color: #8888cc;
             white-space: nowrap;
         }
+
+        /* Load More */
+        .load-more {
+            text-align: center;
+            padding: 2rem;
+        }
+        .load-more button {
+            padding: 0.6rem 2rem;
+            border: 1px solid #2a2a3e;
+            border-radius: 8px;
+            background: transparent;
+            color: #888;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .load-more button:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        .load-more .loading-text {
+            color: #667eea;
+            font-size: 0.85rem;
+        }
+
+        /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 4rem 1rem;
+            padding: 3rem 1rem;
             color: #555;
         }
         .empty-state h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+            margin-bottom: 0.4rem;
         }
+
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.92);
             z-index: 100;
             justify-content: center;
             align-items: center;
@@ -181,9 +290,21 @@
         .modal.active { display: flex; }
         .modal img {
             max-width: 90vw;
-            max-height: 90vh;
+            max-height: 85vh;
             border-radius: 8px;
         }
+        .modal-info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 2rem;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: #ccc;
+            font-size: 0.8rem;
+        }
+        .modal-info .modal-caption { color: #ddd; margin-bottom: 0.3rem; }
+        .modal-info .modal-path { color: #888; font-size: 0.7rem; }
         .modal-close {
             position: fixed;
             top: 1rem; right: 1.5rem;
@@ -192,11 +313,20 @@
             cursor: pointer;
             z-index: 101;
         }
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #667eea;
+        .modal-nav {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2.5rem;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            z-index: 101;
+            user-select: none;
+            transition: color 0.2s;
         }
+        .modal-nav:hover { color: #fff; }
+        .modal-nav.prev { left: 1rem; }
+        .modal-nav.next { right: 1rem; }
     </style>
 </head>
 <body>
@@ -207,129 +337,323 @@
 
     <div class="search-container">
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Describe what you're looking for... e.g. 'cat on a roof', 'sunset beach', 'robot outdoors'" autofocus>
-            <button onclick="search()">Search</button>
+            <input type="text" id="searchInput" placeholder="Describe what you're looking for..." autofocus>
+            <button onclick="doSearch()">Search</button>
         </div>
         <div class="mode-toggle">
             <button class="mode-btn active" data-mode="hybrid" onclick="setMode('hybrid')">🔀 Hybrid</button>
             <button class="mode-btn" data-mode="vector" onclick="setMode('vector')">🧠 Vector</button>
             <button class="mode-btn" data-mode="keyword" onclick="setMode('keyword')">🏷️ Tags</button>
+            <button class="mode-btn" data-mode="text" onclick="setMode('text')">📝 Text</button>
+        </div>
+        <div class="filter-bar">
+            <select id="sortBy" onchange="resetAndLoad()">
+                <option value="indexed_at">Newest indexed</option>
+                <option value="filename">Filename</option>
+                <option value="size_bytes">File size</option>
+                <option value="width">Width</option>
+                <option value="height">Height</option>
+            </select>
+            <select id="filterCaption" onchange="resetAndLoad()">
+                <option value="">All images</option>
+                <option value="true">Has caption</option>
+                <option value="false">No caption</option>
+            </select>
+            <select id="filterFormat" onchange="resetAndLoad()">
+                <option value="">All formats</option>
+            </select>
         </div>
         <div class="stats-bar" id="statsBar">Loading...</div>
     </div>
 
+    <div class="task-panel" id="taskPanel"></div>
     <div class="results" id="results"></div>
+    <div class="load-more" id="loadMore" style="display:none">
+        <button onclick="loadMore()">Load more</button>
+    </div>
 
-    <div class="modal" id="modal" onclick="closeModal()">
-        <span class="modal-close">&times;</span>
+    <div class="modal" id="modal" onclick="closeModal(event)">
+        <span class="modal-close" onclick="closeModal(event)">&times;</span>
+        <span class="modal-nav prev" onclick="navModal(-1, event)">‹</span>
+        <span class="modal-nav next" onclick="navModal(1, event)">›</span>
         <img id="modalImg" src="" alt="">
+        <div class="modal-info">
+            <div class="modal-caption" id="modalCaption"></div>
+            <div class="modal-path" id="modalPath"></div>
+        </div>
     </div>
 
     <script>
         const resultsDiv = document.getElementById('results');
         const searchInput = document.getElementById('searchInput');
         const statsBar = document.getElementById('statsBar');
+        const loadMoreDiv = document.getElementById('loadMore');
+        const taskPanel = document.getElementById('taskPanel');
+
         let searchMode = 'hybrid';
+        let currentItems = [];
+        let currentOffset = 0;
+        let currentTotal = 0;
+        let isLoading = false;
+        let currentModalIndex = -1;
+        const PAGE_SIZE = 50;
 
-        // Load stats on page load
-        fetch('/api/stats').then(r => r.json()).then(data => {
-            statsBar.textContent = `${data.total_images || 0} images indexed`;
-        }).catch(() => {
-            statsBar.textContent = 'Index not loaded — run: eyra index ~/Pictures';
-        });
-
-        // Load all images on page load
+        // Init
+        loadStats();
+        loadFormats();
         loadAllImages();
+        pollTasks();
+        setInterval(pollTasks, 3000);
 
-        // Search on Enter
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') search();
+        // Infinite scroll
+        window.addEventListener('scroll', () => {
+            if (isLoading) return;
+            const scrollBottom = window.innerHeight + window.scrollY;
+            const docHeight = document.documentElement.scrollHeight;
+            if (scrollBottom >= docHeight - 400 && currentOffset < currentTotal) {
+                loadMore();
+            }
         });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        async function loadStats() {
+            try {
+                const r = await fetch('/api/stats');
+                const d = await r.json();
+                let text = `${d.total_images} images`;
+                if (d.captioned > 0) text += ` · ${d.captioned} captioned`;
+                if (d.total_size_bytes > 0) {
+                    const mb = (d.total_size_bytes / (1024*1024)).toFixed(0);
+                    text += ` · ${mb} MB`;
+                }
+                statsBar.textContent = text;
+            } catch(e) { statsBar.textContent = 'Server not running'; }
+        }
+
+        async function loadFormats() {
+            try {
+                const r = await fetch('/api/stats');
+                const d = await r.json();
+                const sel = document.getElementById('filterFormat');
+                if (d.formats) {
+                    for (const [fmt, count] of Object.entries(d.formats)) {
+                        const opt = document.createElement('option');
+                        opt.value = fmt;
+                        opt.textContent = `${fmt} (${count})`;
+                        sel.appendChild(opt);
+                    }
+                }
+            } catch(e) {}
+        }
 
         function setMode(mode) {
             searchMode = mode;
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.mode === mode);
             });
-            // Re-search if there's a query
-            if (searchInput.value.trim()) search();
+            if (searchInput.value.trim()) doSearch();
+        }
+
+        function resetAndLoad() {
+            currentOffset = 0;
+            currentItems = [];
+            resultsDiv.innerHTML = '';
+            if (searchInput.value.trim()) {
+                doSearch();
+            } else {
+                loadAllImages();
+            }
         }
 
         async function loadAllImages() {
+            if (isLoading) return;
+            isLoading = true;
+            loadMoreDiv.innerHTML = '<span class="loading-text">Loading...</span>';
+            loadMoreDiv.style.display = 'block';
+
+            const orderBy = document.getElementById('sortBy').value;
+            const hasCaption = document.getElementById('filterCaption').value;
+            const fmt = document.getElementById('filterFormat').value;
+
+            let url = `/api/images?limit=${PAGE_SIZE}&offset=${currentOffset}&order_by=${orderBy}`;
+            if (hasCaption) url += `&has_caption=${hasCaption}`;
+            if (fmt) url += `&fmt=${fmt}`;
+
             try {
-                const res = await fetch('/api/images?limit=200');
+                const res = await fetch(url);
                 const data = await res.json();
+                currentTotal = data.total;
+
                 if (data.images && data.images.length > 0) {
-                    renderResults(data.images.map(img => ({
+                    const items = data.images.map(img => ({
                         path: img.path,
                         filename: img.filename,
-                        thumbnail: img.thumbnail,
+                        thumbnail: img.thumbnail || '/api/thumbnail?path=' + encodeURIComponent(img.path),
                         similarity: null,
                         caption: img.caption || '',
                         tags: img.tags || [],
-                    })));
-                } else {
-                    resultsDiv.innerHTML = '<div class="empty-state"><h2>No images indexed yet</h2><p>Run: <code>eyra index ~/Pictures</code></p></div>';
+                    }));
+                    currentItems = currentItems.concat(items);
+                    renderResults(items, true);
                 }
-            } catch (e) {
-                resultsDiv.innerHTML = '<div class="empty-state"><h2>Starting up...</h2><p>Make sure the server is running</p></div>';
+
+                currentOffset += data.images.length;
+                updateLoadMore();
+                statsBar.textContent = `${currentOffset} of ${currentTotal} images`;
+            } catch(e) {
+                loadMoreDiv.innerHTML = '<span style="color:#f87171">Failed to load</span>';
+            }
+            isLoading = false;
+        }
+
+        function loadMore() {
+            if (searchInput.value.trim()) {
+                // Search doesn't support infinite scroll yet (results are fixed)
+                return;
+            }
+            loadAllImages();
+        }
+
+        function updateLoadMore() {
+            if (currentOffset < currentTotal) {
+                loadMoreDiv.innerHTML = '<button onclick="loadMore()">Load more</button>';
+                loadMoreDiv.style.display = 'block';
+            } else {
+                loadMoreDiv.style.display = 'none';
             }
         }
 
-        async function search() {
+        async function doSearch() {
             const query = searchInput.value.trim();
-            if (!query) { loadAllImages(); return; }
+            if (!query) { resetAndLoad(); return; }
 
-            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+            isLoading = true;
+            resultsDiv.innerHTML = '<div class="empty-state"><h2>Searching...</h2></div>';
+            loadMoreDiv.style.display = 'none';
 
             try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${searchMode}`);
-                const data = await res.json();
+                let data;
+                if (searchMode === 'text') {
+                    // FTS5 text search
+                    const res = await fetch(`/api/search/text?q=${encodeURIComponent(query)}&limit=200`);
+                    data = await res.json();
+                    data.results = data.images;
+                    data.count = data.total;
+                } else {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${searchMode}&limit=200`);
+                    data = await res.json();
+                }
 
-                if (data.results.length === 0) {
+                if (!data.results || data.results.length === 0) {
                     resultsDiv.innerHTML = '<div class="empty-state"><h2>No results</h2><p>Try a different query</p></div>';
+                    currentItems = [];
                     return;
                 }
 
-                renderResults(data.results);
+                currentItems = data.results.map(r => ({
+                    path: r.path,
+                    filename: r.filename || r.metadata?.filename || '',
+                    thumbnail: r.thumbnail || '/api/thumbnail?path=' + encodeURIComponent(r.path),
+                    similarity: r.similarity,
+                    caption: r.caption || r.metadata?.caption || '',
+                    tags: r.tags || [],
+                }));
+
+                resultsDiv.innerHTML = '';
+                renderResults(currentItems, false);
                 statsBar.textContent = `${data.count} results for "${query}" (${searchMode})`;
-            } catch (e) {
+            } catch(e) {
                 resultsDiv.innerHTML = '<div class="empty-state"><h2>Error</h2><p>Search failed</p></div>';
             }
+            isLoading = false;
         }
 
-        function renderResults(items) {
-            resultsDiv.innerHTML = items.map((item, i) => `
-                <div class="result-card" onclick="openModal('${item.path}')">
-                    <img src="${item.thumbnail || '/api/thumbnail?path=' + encodeURIComponent(item.path)}"
-                         alt="${item.filename || ''}"
-                         loading="lazy">
+        function renderResults(items, append) {
+            const html = items.map((item, i) => `
+                <div class="result-card" onclick="openModal(${append ? currentItems.length - items.length + i : i})">
+                    <img src="${item.thumbnail}" alt="${item.filename || ''}" loading="lazy">
                     <div class="result-info">
                         <div class="filename">${item.filename || ''}</div>
-                        ${item.similarity !== null ? `<div class="similarity">${(item.similarity * 100).toFixed(1)}% match</div>` : ''}
+                        ${item.similarity !== null && item.similarity !== undefined ? `<div class="similarity">${(item.similarity * 100).toFixed(1)}% match</div>` : ''}
                         ${item.caption ? `<div class="caption">${item.caption}</div>` : ''}
                         ${item.tags && item.tags.length > 0 ? `
                             <div class="tags">
-                                ${item.tags.slice(0, 6).map(t => `<span class="tag">${t}</span>`).join('')}
+                                ${item.tags.slice(0, 5).map(t => `<span class="tag">${t}</span>`).join('')}
                             </div>
                         ` : ''}
                     </div>
                 </div>
             `).join('');
+
+            if (append) {
+                resultsDiv.insertAdjacentHTML('beforeend', html);
+            } else {
+                resultsDiv.innerHTML = html;
+            }
         }
 
-        function openModal(path) {
-            document.getElementById('modalImg').src = '/api/image?path=' + encodeURIComponent(path);
+        // Modal
+        function openModal(index) {
+            currentModalIndex = index;
+            const item = currentItems[index];
+            if (!item) return;
+            document.getElementById('modalImg').src = '/api/image?path=' + encodeURIComponent(item.path);
+            document.getElementById('modalCaption').textContent = item.caption || '';
+            document.getElementById('modalPath').textContent = item.path;
             document.getElementById('modal').classList.add('active');
         }
 
-        function closeModal() {
+        function closeModal(e) {
+            if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close')) return;
             document.getElementById('modal').classList.remove('active');
+            currentModalIndex = -1;
+        }
+
+        function navModal(dir, e) {
+            e.stopPropagation();
+            const newIndex = currentModalIndex + dir;
+            if (newIndex >= 0 && newIndex < currentItems.length) {
+                openModal(newIndex);
+            }
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape') closeModal({target: document.getElementById('modal'), currentTarget: document.getElementById('modal')});
+            if (e.key === 'ArrowLeft' && currentModalIndex > 0) navModal(-1, {stopPropagation:()=>{}});
+            if (e.key === 'ArrowRight' && currentModalIndex < currentItems.length - 1) navModal(1, {stopPropagation:()=>{}});
         });
+
+        // Task polling
+        async function pollTasks() {
+            try {
+                const r = await fetch('/api/tasks');
+                const d = await r.json();
+                const tasks = d.tasks || [];
+
+                if (tasks.length === 0) {
+                    taskPanel.innerHTML = '';
+                    return;
+                }
+
+                taskPanel.innerHTML = tasks.map(t => `
+                    <div class="task-card">
+                        <div class="task-header">
+                            <span class="task-type">${t.type === 'index' ? '📥' : '🏷️'} ${t.type}</span>
+                            <span class="task-status ${t.status}">${t.status}</span>
+                        </div>
+                        <div class="task-message">${t.message || 'Waiting...'}</div>
+                        ${t.total > 0 ? `
+                            <div class="task-progress-bar">
+                                <div class="task-progress-fill" style="width:${t.percent}%"></div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
     </script>
 </body>
 </html>
