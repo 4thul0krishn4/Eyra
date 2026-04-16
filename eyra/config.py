@@ -26,8 +26,8 @@ COLLECTION_NAME = "eyra_images"
 THUMBNAIL_SIZE = (256, 256)
 
 # Captioning model settings
-CAPTION_MODEL = "microsoft/Florence-2-base"
-CAPTION_BACKEND = "florence2"  # "florence2" or "blip2"
+CAPTION_MODEL = "Salesforce/blip-image-captioning-base"
+CAPTION_BACKEND = "blip"  # "blip", "florence2", or "blip2"
 CAPTION_MODEL_DIR = EYRA_DIR / "caption_models"
 CAPTION_MAX_TAGS = 15
 CAPTION_DEVICE = ""  # auto-detect: "mps", "cuda", "cpu", or "" for auto

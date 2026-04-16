@@ -19,12 +19,13 @@ from .config import (
 class Captioner:
     """Generates natural language captions and discrete tags for images.
 
-    Supports two backends:
-      - florence2 (default): Microsoft Florence-2 — fast, lightweight, multi-task
+    Supports three backends:
+      - blip (default): Salesforce BLIP-base — fast, lightweight, reliable
+      - florence2: Microsoft Florence-2 — multi-task but may have version issues
       - blip2: Salesforce BLIP-2 — heavier but high-quality captions
     """
 
-    def __init__(self, model_name: str = CAPTION_MODEL, backend: str = "florence2"):
+    def __init__(self, model_name: str = CAPTION_MODEL, backend: str = "blip"):
         self.model_name = model_name
         self.backend = backend
         self.device = self._detect_device()
@@ -51,8 +52,10 @@ class Captioner:
             self._load_florence2()
         elif self.backend == "blip2":
             self._load_blip2()
+        elif self.backend == "blip":
+            self._load_blip()
         else:
-            raise ValueError(f"Unknown backend: {self.backend}. Use 'florence2' or 'blip2'")
+            raise ValueError(f"Unknown backend: {self.backend}. Use 'blip', 'florence2', or 'blip2'")
 
         print("  Captioner loaded ✅")
 
@@ -96,6 +99,20 @@ class Captioner:
         )
         self.model = self.model.to(self.device)
 
+    def _load_blip(self):
+        """Load BLIP-base model (fast, lightweight)."""
+        from transformers import BlipProcessor, BlipForConditionalGeneration
+
+        self.processor = BlipProcessor.from_pretrained(
+            self.model_name,
+            cache_dir=str(CAPTION_MODEL_DIR),
+        )
+        self.model = BlipForConditionalGeneration.from_pretrained(
+            self.model_name,
+            cache_dir=str(CAPTION_MODEL_DIR),
+        )
+        self.model = self.model.to(self.device)
+
     def caption(self, image_path: str | Path) -> str:
         """Generate a natural language caption for an image.
 
@@ -110,6 +127,8 @@ class Captioner:
 
         if self.backend == "florence2":
             return self._caption_florence2(img)
+        elif self.backend == "blip":
+            return self._caption_blip(img)
         else:
             return self._caption_blip2(img)
 
@@ -162,6 +181,16 @@ class Captioner:
         caption = self.processor.decode(out[0], skip_special_tokens=True)
         return caption.strip()
 
+    def _caption_blip(self, img: Image.Image) -> str:
+        """Caption using BLIP-base (fast, lightweight)."""
+        inputs = self.processor(images=img, return_tensors="pt").to(self.device)
+
+        with torch.no_grad():
+            out = self.model.generate(**inputs, max_new_tokens=50)
+
+        caption = self.processor.decode(out[0], skip_special_tokens=True)
+        return caption.strip()
+
     def tags(self, image_path: str | Path) -> list[str]:
         """Generate discrete tags/keywords for an image.
 
@@ -176,6 +205,8 @@ class Captioner:
 
         if self.backend == "florence2":
             return self._tags_florence2(img)
+        elif self.backend == "blip":
+            return self._tags_blip(img)
         else:
             return self._tags_blip2(img)
 
@@ -269,6 +300,11 @@ class Captioner:
                 unique_tags.append(tag_lower)
 
         return unique_tags[:CAPTION_MAX_TAGS]
+
+    def _tags_blip(self, img: Image.Image) -> list[str]:
+        """Extract tags from BLIP-base caption."""
+        caption = self._caption_blip(img)
+        return self._extract_tags_from_caption(caption)[:CAPTION_MAX_TAGS]
 
     def _extract_tags_from_caption(self, caption: str) -> list[str]:
         """Extract meaningful keywords/tags from a caption string."""
