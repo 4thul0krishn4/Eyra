@@ -74,6 +74,9 @@ class Indexer:
             caption=metadata.get("caption", ""),
             tags=tags,
             modified=metadata.get("modified", ""),
+            ocr_text=metadata.get("ocr_text", ""),
+            date_taken=metadata.get("date_taken", ""),
+            exif=metadata.get("exif", {}),
         )
 
     def add_batch(
@@ -111,6 +114,9 @@ class Indexer:
                 "caption": meta.get("caption", ""),
                 "tags": tags,
                 "modified": meta.get("modified", ""),
+                "ocr_text": meta.get("ocr_text", ""),
+                "date_taken": meta.get("date_taken", ""),
+                "exif": meta.get("exif", {}),
             })
 
         self.metadata_store.add_batch(records)

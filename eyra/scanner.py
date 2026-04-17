@@ -53,9 +53,12 @@ def scan_folder(folder: str | Path) -> Generator[dict, None, None]:
 
                 # Extract EXIF data
                 exif = {}
+                date_taken = ""
                 if hasattr(img, "_getexif") and img._getexif():
                     for tag_id, value in img._getexif().items():
                         tag = TAGS.get(tag_id, tag_id)
+                        if tag == "DateTimeOriginal" or tag == "DateTime":
+                            date_taken = str(value).replace(":", "-", 2).replace(" ", "T")[:19]
                         # Skip binary data
                         if isinstance(value, (str, int, float)):
                             exif[tag] = str(value)
@@ -69,6 +72,7 @@ def scan_folder(folder: str | Path) -> Generator[dict, None, None]:
                     "format": img.format,
                     "exif": exif,
                     "hash": file_hash(filepath),
+                    "date_taken": date_taken,
                 }
 
                 img.close()

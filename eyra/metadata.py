@@ -63,7 +63,10 @@ class MetadataStore:
                 tags_json TEXT DEFAULT '[]',
                 modified TEXT DEFAULT '',
                 indexed_at TEXT DEFAULT (datetime('now')),
-                has_caption INTEGER DEFAULT 0
+                has_caption INTEGER DEFAULT 0,
+                ocr_text TEXT DEFAULT '',
+                date_taken TEXT DEFAULT '',
+                exif_json TEXT DEFAULT '{}'
             );
 
             CREATE INDEX IF NOT EXISTS idx_images_format ON images(format);
@@ -77,26 +80,27 @@ class MetadataStore:
                 path,
                 caption,
                 tags,
+                ocr_text,
                 content='images',
                 content_rowid='rowid'
             );
 
             -- Triggers to keep FTS in sync
             CREATE TRIGGER IF NOT EXISTS images_ai AFTER INSERT ON images BEGIN
-                INSERT INTO images_fts(rowid, path, caption, tags)
-                VALUES (new.rowid, new.path, new.caption, new.tags_json);
+                INSERT INTO images_fts(rowid, path, caption, tags, ocr_text)
+                VALUES (new.rowid, new.path, new.caption, new.tags_json, new.ocr_text);
             END;
 
             CREATE TRIGGER IF NOT EXISTS images_ad AFTER DELETE ON images BEGIN
-                INSERT INTO images_fts(images_fts, rowid, path, caption, tags)
-                VALUES ('delete', old.rowid, old.path, old.caption, old.tags_json);
+                INSERT INTO images_fts(images_fts, rowid, path, caption, tags, ocr_text)
+                VALUES ('delete', old.rowid, old.path, old.caption, old.tags_json, old.ocr_text);
             END;
 
             CREATE TRIGGER IF NOT EXISTS images_au AFTER UPDATE ON images BEGIN
-                INSERT INTO images_fts(images_fts, rowid, path, caption, tags)
-                VALUES ('delete', old.rowid, old.path, old.caption, old.tags_json);
-                INSERT INTO images_fts(rowid, path, caption, tags)
-                VALUES (new.rowid, new.path, new.caption, new.tags_json);
+                INSERT INTO images_fts(images_fts, rowid, path, caption, tags, ocr_text)
+                VALUES ('delete', old.rowid, old.path, old.caption, old.tags_json, old.ocr_text);
+                INSERT INTO images_fts(rowid, path, caption, tags, ocr_text)
+                VALUES (new.rowid, new.path, new.caption, new.tags_json, new.ocr_text);
             END;
         """)
         conn.commit()
@@ -104,16 +108,19 @@ class MetadataStore:
     def add_image(self, path: str, filename: str, size_bytes: int = 0,
                   width: int = 0, height: int = 0, fmt: str = "",
                   caption: str = "", tags: list[str] = None,
-                  modified: str = ""):
+                  modified: str = "", ocr_text: str = "",
+                  date_taken: str = "", exif: dict = None):
         """Add or update an image's metadata."""
         tags_json = json.dumps(tags or [])
         has_caption = 1 if caption.strip() else 0
+        exif_json = json.dumps(exif or {})
 
         with self._transaction() as conn:
             conn.execute("""
                 INSERT INTO images (path, filename, size_bytes, width, height,
-                                    format, caption, tags_json, modified, has_caption)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                    format, caption, tags_json, modified, has_caption,
+                                    ocr_text, date_taken, exif_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(path) DO UPDATE SET
                     filename = excluded.filename,
                     size_bytes = excluded.size_bytes,
@@ -124,9 +131,13 @@ class MetadataStore:
                     tags_json = excluded.tags_json,
                     modified = excluded.modified,
                     has_caption = excluded.has_caption,
+                    ocr_text = excluded.ocr_text,
+                    date_taken = excluded.date_taken,
+                    exif_json = excluded.exif_json,
                     indexed_at = datetime('now')
             """, (path, filename, size_bytes, width, height, fmt,
-                  caption, tags_json, modified, has_caption))
+                  caption, tags_json, modified, has_caption,
+                  ocr_text, date_taken, exif_json))
 
     def add_batch(self, records: list[dict]):
         """Add/update multiple images at once.
@@ -139,11 +150,14 @@ class MetadataStore:
                 tags_json = json.dumps(tags) if isinstance(tags, list) else tags
                 caption = r.get("caption", "")
                 has_caption = 1 if caption.strip() else 0
+                exif = r.get("exif", {})
+                exif_json = json.dumps(exif) if isinstance(exif, dict) else exif
 
                 conn.execute("""
                     INSERT INTO images (path, filename, size_bytes, width, height,
-                                        format, caption, tags_json, modified, has_caption)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                        format, caption, tags_json, modified, has_caption,
+                                        ocr_text, date_taken, exif_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(path) DO UPDATE SET
                         filename = excluded.filename,
                         size_bytes = excluded.size_bytes,
@@ -154,10 +168,14 @@ class MetadataStore:
                         tags_json = excluded.tags_json,
                         modified = excluded.modified,
                         has_caption = excluded.has_caption,
+                        ocr_text = excluded.ocr_text,
+                        date_taken = excluded.date_taken,
+                        exif_json = excluded.exif_json,
                         indexed_at = datetime('now')
                 """, (r["path"], r["filename"], r.get("size_bytes", 0),
                       r.get("width", 0), r.get("height", 0), r.get("format", ""),
-                      caption, tags_json, r.get("modified", ""), has_caption))
+                      caption, tags_json, r.get("modified", ""), has_caption,
+                      r.get("ocr_text", ""), r.get("date_taken", ""), exif_json))
 
     def delete_image(self, path: str):
         """Remove an image from the metadata store."""
@@ -358,6 +376,98 @@ class MetadataStore:
             query += f" LIMIT {limit}"
         rows = conn.execute(query).fetchall()
         return [self._row_to_dict(r) for r in rows]
+
+    def update_ocr(self, path: str, ocr_text: str):
+        """Update the OCR text for a specific image."""
+        with self._transaction() as conn:
+            conn.execute("UPDATE images SET ocr_text = ? WHERE path = ?", (ocr_text, path))
+
+    def get_unocr(self, limit: int = 0) -> list[dict]:
+        """Get images that haven't been OCR'd yet."""
+        conn = self._get_conn()
+        query = "SELECT * FROM images WHERE ocr_text = ''"
+        if limit > 0:
+            query += f" LIMIT {limit}"
+        rows = conn.execute(query).fetchall()
+        return [self._row_to_dict(r) for r in rows]
+
+    def ocr_stats(self) -> dict:
+        """Get OCR statistics."""
+        conn = self._get_conn()
+        total = conn.execute("SELECT COUNT(*) FROM images").fetchone()[0]
+        ocred = conn.execute("SELECT COUNT(*) FROM images WHERE ocr_text != ''").fetchone()[0]
+        return {"total": total, "ocr_done": ocred, "ocr_pending": total - ocred}
+
+    def timeline(self, group_by: str = "month", limit: int = 100) -> list[dict]:
+        """Get timeline of images grouped by date.
+
+        Args:
+            group_by: "day", "month", or "year"
+            limit: max number of groups to return
+
+        Returns: [{date, count, images: [{path, filename, caption, tags}]}]
+        """
+        conn = self._get_conn()
+
+        # Use date_taken if available, fall back to modified, then indexed_at
+        date_expr = "COALESCE(NULLIF(date_taken, ''), NULLIF(modified, ''), indexed_at)"
+
+        if group_by == "day":
+            trunc = f"substr({date_expr}, 1, 10)"
+        elif group_by == "year":
+            trunc = f"substr({date_expr}, 1, 4)"
+        else:  # month
+            trunc = f"substr({date_expr}, 1, 7)"
+
+        groups = conn.execute(f"""
+            SELECT {trunc} as period, COUNT(*) as cnt
+            FROM images
+            WHERE {date_expr} != ''
+            GROUP BY period
+            ORDER BY period DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+
+        result = []
+        for g in groups:
+            period = g["period"]
+            # Get sample images from this period
+            if group_by == "day":
+                date_filter = f"{date_expr} LIKE '{period}%'"
+            elif group_by == "year":
+                date_filter = f"{date_expr} LIKE '{period}%'"
+            else:
+                date_filter = f"{date_expr} LIKE '{period}%'"
+
+            imgs = conn.execute(f"""
+                SELECT path, filename, caption, tags_json
+                FROM images
+                WHERE {date_filter}
+                ORDER BY {date_expr}
+                LIMIT 20
+            """).fetchall()
+
+            images = []
+            for ir in imgs:
+                tags = []
+                try:
+                    tags = json.loads(ir["tags_json"]) if ir["tags_json"] else []
+                except (json.JSONDecodeError, TypeError):
+                    pass
+                images.append({
+                    "path": ir["path"],
+                    "filename": ir["filename"],
+                    "caption": ir["caption"] or "",
+                    "tags": tags,
+                })
+
+            result.append({
+                "date": period,
+                "count": g["cnt"],
+                "images": images,
+            })
+
+        return result
 
     def _row_to_dict(self, row: sqlite3.Row) -> dict:
         """Convert a SQLite row to a dict, parsing JSON fields."""
