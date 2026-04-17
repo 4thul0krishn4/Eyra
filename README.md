@@ -1,24 +1,24 @@
-# 👁️ Eyra
+# Eyra
 
-Local-first AI image memory — turns any folder into a searchable visual knowledge base.
+Local-first AI image memory. Point it at a folder of images, and it builds a searchable visual knowledge base on your machine.
 
-Instead of relying on filenames or manual organization, Eyra uses vision models to understand each image, generate tags and captions, and create embeddings for semantic search. Run `eyra search "cat on a roof"` and it finds the image — even if the file is called `IMG_4892.jpg`.
+Instead of relying on filenames or manual organization, Eyra uses vision models to understand each image, generate tags and captions, and create embeddings for semantic search. `eyra search "cat on a roof"` finds the image, even if the file is called `IMG_4892.jpg`.
 
 ## Features
 
-- 🔍 **Semantic search** — find images by describing what you're looking for
-- 🏷️ **Auto-tagging** — vision models generate tags and captions (Florence-2 or BLIP)
-- 🔀 **Hybrid search** — combines vector similarity + keyword matching
-- 🧩 **Visual clustering** — auto-group similar images using K-Means on CLIP embeddings
-- 📝 **OCR** — extract text from images (Apple Vision or Tesseract)
-- 💬 **Chat UI** — conversational search with natural language summaries
-- 📅 **Timeline** — browse images by date from EXIF data
-- 📓 **Obsidian export** — export to Markdown notes with YAML frontmatter
-- 📂 **Folder indexing** — point it at any folder, it handles the rest
-- 👁️ **File watching** — automatically indexes new images as they appear
-- 🖥️ **Web UI** — dark-mode interface with Browse, Clusters, Chat, and Timeline tabs
-- 🔒 **100% local** — no cloud, no accounts, no data leaves your machine
-- ⚡ **Fast** — optimized for Apple Silicon (M-series Macs)
+- Semantic search: find images by describing what you're looking for
+- Auto-tagging: vision models generate tags and captions (Florence-2 or BLIP)
+- Hybrid search: combines vector similarity and keyword matching
+- Visual clustering: auto-group similar images using K-Means on CLIP embeddings
+- OCR: extract text from images (Apple Vision or Tesseract)
+- Chat UI: conversational search with natural language summaries
+- Timeline: browse images by date from EXIF data
+- Obsidian export: export to Markdown notes with YAML frontmatter
+- Folder indexing: point it at any folder, it handles the rest
+- File watching: automatically indexes new images as they appear
+- Web UI: dark-mode interface with Browse, Clusters, Chat, and Timeline tabs
+- 100% local: no cloud, no accounts, no data leaves your machine
+- Fast: optimized for Apple Silicon (M-series Macs)
 
 ## Quick Start
 
@@ -73,7 +73,7 @@ eyra serve                             # Start web UI at localhost:8080
 
 ## Auto-Tagging
 
-Eyra uses Florence-2 (default) or BLIP to generate natural language captions and descriptive tags for every image.
+Eyra uses Florence-2 (default) or BLIP to generate captions and tags for every image.
 
 ```bash
 # Index and caption at the same time
@@ -89,14 +89,14 @@ eyra caption ~/Pictures --backend florence2
 ## Hybrid Search
 
 By default, search combines:
-- **Vector similarity** (60%) — CLIP embeddings understand visual concepts
-- **Keyword matching** (40%) — matches against generated tags and captions
+- Vector similarity (60%): CLIP embeddings understand visual concepts
+- Keyword matching (40%): matches against generated tags and captions
 
 Use `--mode vector` or `--mode keyword` to search with only one method.
 
 ## Visual Clustering
 
-Automatically groups your images by visual similarity using K-Means on CLIP embeddings. The number of clusters is auto-detected via silhouette score.
+Groups your images by visual similarity using K-Means on CLIP embeddings. The number of clusters is auto-detected via silhouette score.
 
 ```bash
 # Run clustering (auto-detects optimal number of groups)
@@ -125,13 +125,13 @@ eyra ocr --limit 100
 
 Extracted text is stored in SQLite and searchable via full-text search.
 
-**Requirements:** Install one of:
+Requirements: install one of:
 - `pip install pytesseract` + `brew install tesseract` (cross-platform)
 - `pip install pyobjc-framework-Vision` (macOS, uses built-in Apple Vision)
 
 ## Obsidian Export
 
-Export your indexed images as Obsidian-compatible Markdown notes with YAML frontmatter, Dataview-compatible metadata, and embedded image references.
+Export indexed images as Obsidian-compatible Markdown notes with YAML frontmatter, Dataview-compatible metadata, and embedded image references.
 
 ```bash
 # Export with absolute image paths (default)
@@ -147,15 +147,11 @@ eyra export ~/MyVault --organize date
 eyra export ~/MyVault --tag screenshot
 ```
 
-Each note includes:
-- YAML frontmatter (title, tags, caption, dates, dimensions)
-- Embedded image reference
-- OCR text (if available)
-- Auto-generated index/MOC note
+Each note includes YAML frontmatter, embedded image reference, OCR text (if available), and an auto-generated index note.
 
 ## Timeline
 
-Browse your images by date, extracted from EXIF metadata or file modification dates.
+Browse images by date, extracted from EXIF metadata or file modification dates.
 
 ```bash
 # Group by month (default)
@@ -174,30 +170,22 @@ Also available in the Web UI Timeline tab.
 
 The web UI (`eyra serve`) has four tabs:
 
-- **Browse** — search, filter, and browse all images with infinite scroll
-- **Clusters** — run and view visual clusters
-- **Chat** — conversational search with natural language summaries
-- **Timeline** — browse images by date
+- **Browse**: search, filter, and browse all images with infinite scroll
+- **Clusters**: run and view visual clusters
+- **Chat**: conversational search with natural language summaries
+- **Timeline**: browse images by date
 
-Features:
-- Infinite scroll for large collections
-- Sort by newest, filename, size, dimensions
-- Filter by caption status, image format
-- Live task monitoring with progress bars
-- Keyboard navigation in the lightbox modal
-- Full-text search (FTS5) on captions, tags, and OCR text
+Other features: infinite scroll for large collections, sort by newest/filename/size/dimensions, filter by caption status and format, live task monitoring with progress bars, keyboard navigation in the lightbox, full-text search on captions/tags/OCR text.
 
-## Performance & Scale
+## Performance
 
-Eyra handles thousands of images without breaking a sweat.
-
-### SQLite Sidecar Database
+### SQLite Sidecar
 
 Metadata is stored in SQLite alongside ChromaDB vectors:
-- **Fast filtering** by format, dimensions, tags, caption status
-- **Full-text search** (FTS5) on captions, tags, and OCR text
-- **Instant stats** without loading all vectors
-- **Proper pagination** with accurate total counts
+- Fast filtering by format, dimensions, tags, caption status
+- Full-text search (FTS5) on captions, tags, and OCR text
+- Instant stats without loading all vectors
+- Proper pagination with accurate total counts
 
 ### Background Indexing
 
@@ -210,14 +198,14 @@ eyra tasks
 
 ## How It Works
 
-1. **Scan** — finds all images in the folder (JPG, PNG, WebP, HEIC, etc.)
-2. **Embed** — generates CLIP embeddings for each image
-3. **Caption** — Florence-2 generates captions and tags (optional)
-4. **Store** — embeddings in ChromaDB, metadata in SQLite
-5. **Search** — hybrid vector + keyword search
-6. **Discover** — clustering, OCR, timeline, export
+1. Scan: finds all images in the folder (JPG, PNG, WebP, HEIC, etc.)
+2. Embed: generates CLIP embeddings for each image
+3. Caption: Florence-2 generates captions and tags (optional)
+4. Store: embeddings in ChromaDB, metadata in SQLite
+5. Search: hybrid vector + keyword search
+6. Discover: clustering, OCR, timeline, export
 
-Everything runs on your machine. No API calls, no cloud, no tracking.
+Everything runs on your machine.
 
 ## Requirements
 
@@ -227,15 +215,15 @@ Everything runs on your machine. No API calls, no cloud, no tracking.
 
 ## Tech Stack
 
-- OpenCLIP — CLIP embeddings for images and text
-- Florence-2 / BLIP — vision models for captioning
-- ChromaDB — local vector database
-- SQLite — metadata storage with FTS5 full-text search
-- scikit-learn — K-Means clustering
-- FastAPI — web backend
-- Typer + Rich — CLI
-- Watchdog — file system monitoring
-- Pillow — image processing
+- OpenCLIP: CLIP embeddings for images and text
+- Florence-2 / BLIP: vision models for captioning
+- ChromaDB: local vector database
+- SQLite: metadata storage with FTS5 full-text search
+- scikit-learn: K-Means clustering
+- FastAPI: web backend
+- Typer + Rich: CLI
+- Watchdog: file system monitoring
+- Pillow: image processing
 
 ## License
 

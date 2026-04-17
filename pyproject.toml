@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "eyra"
 version = "0.1.0"
-description = "Local-first AI image memory — turns any folder into a searchable visual knowledge base"
+description = "Local-first AI image search with auto-tagging, clustering, OCR, and timeline"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
