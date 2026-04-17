@@ -1,5 +1,9 @@
 # Eyra
 
+<p align="center">
+  <img src="assets/logo.png" alt="Eyra logo" width="120">
+</p>
+
 Local-first AI image memory. Point it at a folder of images, and it builds a searchable visual knowledge base on your machine.
 
 Instead of relying on filenames or manual organization, Eyra uses vision models to understand each image, generate tags and captions, and create embeddings for semantic search. `eyra search "cat on a roof"` finds the image, even if the file is called `IMG_4892.jpg`.
