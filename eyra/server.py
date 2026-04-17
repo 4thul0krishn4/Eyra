@@ -259,4 +259,149 @@ def create_app() -> FastAPI:
             return {"cancelled": True}
         raise HTTPException(status_code=400, detail="Task not found or already running")
 
+    # --- Phase 4: Clustering ---
+
+    @app.post("/api/clusters")
+    async def api_clusters_run(
+        n_clusters: int = Query(None, description="Number of clusters (auto if omitted)"),
+    ):
+        """Run visual clustering on all indexed images."""
+        from .clusterer import Clusterer
+        clusterer = Clusterer(indexer)
+        result = clusterer.cluster(n_clusters=n_clusters, auto=n_clusters is None)
+
+        # Add thumbnail URLs
+        for c in result.get("clusters", []):
+            for img in c.get("images", [])[:10]:
+                thumb = generate_thumbnail(img) if isinstance(img, str) else None
+            # Convert image paths to objects with thumbnails
+            if "images" in c and c["images"] and isinstance(c["images"][0], str):
+                c["images"] = [{"path": p, "thumbnail": f"/api/thumbnail?path={p}"} for p in c["images"]]
+
+        return result
+
+    @app.get("/api/clusters")
+    async def api_clusters_get():
+        """Get saved clusters."""
+        from .clusterer import Clusterer
+        clusterer = Clusterer(indexer)
+        result = clusterer.get_clusters()
+
+        for c in result.get("clusters", []):
+            for img in c.get("images", []):
+                img["thumbnail"] = f"/api/thumbnail?path={img['path']}"
+
+        return result
+
+    @app.get("/api/clusters/for")
+    async def api_cluster_for_image(path: str = Query(..., description="Image path")):
+        """Get cluster assignment for a specific image."""
+        from .clusterer import Clusterer
+        clusterer = Clusterer(indexer)
+        result = clusterer.get_image_cluster(path)
+        if result:
+            return result
+        return {"cluster_id": -1, "label": "Unclustered"}
+
+    # --- Phase 4: OCR ---
+
+    @app.post("/api/ocr")
+    async def api_ocr_run(
+        reindex: bool = Query(False, description="Re-OCR already processed images"),
+        limit: int = Query(0, ge=0, description="Max images (0 = all)"),
+        backend: str = Query("auto", description="OCR backend: vision, tesseract, auto"),
+    ):
+        """Run OCR on indexed images."""
+        from .ocr import OCREngine
+
+        if reindex:
+            images = meta.list_images(limit=0, offset=0)["images"]
+        else:
+            images = meta.get_unocr()
+
+        if limit > 0:
+            images = images[:limit]
+
+        if not images:
+            return {"processed": 0, "message": "No images need OCR"}
+
+        engine = OCREngine(backend=backend)
+        engine.load()
+
+        processed = 0
+        with_text = 0
+        for img in images:
+            try:
+                result = engine.extract_structured(img["path"])
+                meta.update_ocr(img["path"], result["text"])
+                processed += 1
+                if result["has_text"]:
+                    with_text += 1
+            except Exception:
+                pass
+
+        return {"processed": processed, "with_text": with_text, "total": len(images)}
+
+    @app.get("/api/ocr/stats")
+    async def api_ocr_stats():
+        """Get OCR statistics."""
+        return meta.ocr_stats()
+
+    # --- Phase 4: Chat UI ---
+
+    @app.get("/api/chat")
+    async def api_chat(
+        q: str = Query(..., description="Natural language query"),
+        limit: int = Query(10, ge=1, le=50),
+    ):
+        """Conversational search — returns results with natural language summary."""
+        results = engine.search(query=q, n_results=limit, min_similarity=0.1)
+
+        # Build response items
+        items = []
+        for r in results:
+            thumb = generate_thumbnail(r["path"])
+            tags_str = r["metadata"].get("tags", "[]")
+            try:
+                tags = json.loads(tags_str) if isinstance(tags_str, str) else tags_str
+            except (json.JSONDecodeError, TypeError):
+                tags = []
+
+            items.append({
+                "path": r["path"],
+                "filename": r["metadata"].get("filename", ""),
+                "thumbnail": f"/api/thumbnail?path={r['path']}" if thumb else None,
+                "similarity": round(r["similarity"], 4),
+                "caption": r["metadata"].get("caption", ""),
+                "tags": tags,
+            })
+
+        # Generate a summary
+        if not items:
+            summary = f"I couldn't find any images matching \"{q}\". Try a different description."
+        elif len(items) == 1:
+            summary = f"I found 1 image matching \"{q}\"."
+        else:
+            top_match = items[0]
+            match_pct = round(top_match["similarity"] * 100)
+            summary = f"Found {len(items)} images matching \"{q}\". Top match: {top_match['filename']} ({match_pct}% similarity)."
+
+        return {"query": q, "summary": summary, "results": items, "count": len(items)}
+
+    # --- Phase 6: Timeline ---
+
+    @app.get("/api/timeline")
+    async def api_timeline(
+        group_by: str = Query("month", description="Group by: day, month, year"),
+        limit: int = Query(50, ge=1, le=200),
+    ):
+        """Get image timeline grouped by date."""
+        groups = meta.timeline(group_by=group_by, limit=limit)
+
+        for g in groups:
+            for img in g.get("images", []):
+                img["thumbnail"] = f"/api/thumbnail?path={img['path']}"
+
+        return {"group_by": group_by, "groups": groups}
+
     return app

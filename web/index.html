@@ -327,6 +327,213 @@
         .modal-nav:hover { color: #fff; }
         .modal-nav.prev { left: 1rem; }
         .modal-nav.next { right: 1rem; }
+
+        /* Tab Navigation */
+        .tab-bar {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            color: #666;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-btn:hover:not(.active) { color: #aaa; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Chat Panel */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+        .chat-msg {
+            margin-bottom: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            max-width: 85%;
+        }
+        .chat-msg.user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.assistant {
+            background: #12121a;
+            border: 1px solid #2a2a3e;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg .msg-text { font-size: 0.9rem; line-height: 1.5; }
+        .chat-msg .msg-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .chat-msg .msg-images img {
+            width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .chat-msg .msg-images img:hover { transform: scale(1.05); }
+        .chat-input-bar {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.8rem 0;
+            border-top: 1px solid #1a1a2e;
+        }
+        .chat-input-bar input {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border: 1px solid #2a2a3e;
+            border-radius: 10px;
+            background: #12121a;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .chat-input-bar input:focus { border-color: #667eea; }
+        .chat-input-bar button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        /* Cluster View */
+        .clusters-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .cluster-group {
+            margin-bottom: 2rem;
+        }
+        .cluster-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .cluster-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .cluster-count {
+            font-size: 0.8rem;
+            color: #666;
+            background: #12121a;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+        }
+        .cluster-images {
+            columns: 4;
+            column-gap: 0.8rem;
+        }
+        @media (max-width: 900px) { .cluster-images { columns: 3; } }
+        @media (max-width: 600px) { .cluster-images { columns: 2; } }
+        .cluster-run-btn {
+            display: block;
+            margin: 2rem auto;
+            padding: 0.7rem 2rem;
+            border: 1px solid #2a2a3e;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Timeline View */
+        .timeline-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .timeline-group {
+            margin-bottom: 2rem;
+            position: relative;
+            padding-left: 2rem;
+        }
+        .timeline-group::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #2a2a3e;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0.15rem;
+            top: 0.5rem;
+            width: 0.7rem;
+            height: 0.7rem;
+            border-radius: 50%;
+            background: #667eea;
+        }
+        .timeline-date {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.3rem;
+        }
+        .timeline-count {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.6rem;
+        }
+        .timeline-images {
+            columns: 4;
+            column-gap: 0.6rem;
+        }
+        @media (max-width: 900px) { .timeline-images { columns: 3; } }
+        @media (max-width: 600px) { .timeline-images { columns: 2; } }
+        .timeline-controls {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .timeline-controls select {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid #2a2a3e;
+            border-radius: 8px;
+            background: #12121a;
+            color: #ccc;
+            font-size: 0.85rem;
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -334,6 +541,16 @@
         <h1>👁️ Eyra</h1>
         <p>Local-first AI image memory — search by meaning, not filename</p>
     </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('browse')">🔍 Browse</button>
+        <button class="tab-btn" onclick="switchTab('clusters')">🧩 Clusters</button>
+        <button class="tab-btn" onclick="switchTab('chat')">💬 Chat</button>
+        <button class="tab-btn" onclick="switchTab('timeline')">📅 Timeline</button>
+    </div>
+
+    <!-- Browse Tab (existing) -->
+    <div class="tab-content active" id="tab-browse">
 
     <div class="search-container">
         <div class="search-box">
@@ -370,6 +587,51 @@
     <div class="results" id="results"></div>
     <div class="load-more" id="loadMore" style="display:none">
         <button onclick="loadMore()">Load more</button>
+    </div>
+
+    <!-- Clusters Tab -->
+    <div class="tab-content" id="tab-clusters">
+        <div class="clusters-grid" id="clustersGrid">
+            <div class="empty-state">
+                <h2>Visual Clusters</h2>
+                <p>Group your images by visual similarity</p>
+                <button class="cluster-run-btn" onclick="runClustering()">🧩 Run Clustering</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Tab -->
+    <div class="tab-content" id="tab-chat">
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-msg assistant">
+                    <div class="msg-text">Hi! Describe what you're looking for and I'll find matching images from your library. 🔍</div>
+                </div>
+            </div>
+            <div class="chat-input-bar">
+                <input type="text" id="chatInput" placeholder="Ask about your images..." autofocus>
+                <button onclick="sendChat()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Tab -->
+    <div class="tab-content" id="tab-timeline">
+        <div class="timeline-container">
+            <div class="timeline-controls">
+                <select id="timelineGroup" onchange="loadTimeline()">
+                    <option value="month">By Month</option>
+                    <option value="year">By Year</option>
+                    <option value="day">By Day</option>
+                </select>
+            </div>
+            <div id="timelineContent">
+                <div class="empty-state">
+                    <h2>Timeline</h2>
+                    <p>Browse your images by date</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal" id="modal" onclick="closeModal(event)">
@@ -653,6 +915,169 @@
                     </div>
                 `).join('');
             } catch(e) {}
+        }
+
+        // --- Tab Navigation ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+            // Load data lazily
+            if (tab === 'clusters') loadClusters();
+            if (tab === 'timeline') loadTimeline();
+        }
+
+        // --- Clusters ---
+        async function loadClusters() {
+            const grid = document.getElementById('clustersGrid');
+            try {
+                const r = await fetch('/api/clusters');
+                const d = await r.json();
+                if (!d.clusters || d.clusters.length === 0) {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <h2>No Clusters Yet</h2>
+                            <p>Run clustering to auto-group your images by visual similarity</p>
+                            <button class="cluster-run-btn" onclick="runClustering()">🧩 Run Clustering</button>
+                        </div>`;
+                    return;
+                }
+                renderClusters(d.clusters);
+            } catch(e) {
+                grid.innerHTML = '<div class="empty-state"><h2>Error loading clusters</h2></div>';
+            }
+        }
+
+        async function runClustering() {
+            const grid = document.getElementById('clustersGrid');
+            grid.innerHTML = '<div class="empty-state"><h2>Clustering... 🧩</h2><p>This may take a moment</p></div>';
+            try {
+                const r = await fetch('/api/clusters', {method: 'POST'});
+                const d = await r.json();
+                renderClusters(d.clusters || []);
+            } catch(e) {
+                grid.innerHTML = '<div class="empty-state"><h2>Error running clustering</h2></div>';
+            }
+        }
+
+        function renderClusters(clusters) {
+            const grid = document.getElementById('clustersGrid');
+            grid.innerHTML = clusters.map(c => `
+                <div class="cluster-group">
+                    <div class="cluster-header">
+                        <span class="cluster-label">${c.label || 'Group ' + c.id}</span>
+                        <span class="cluster-count">${c.size} images</span>
+                    </div>
+                    <div class="cluster-images">
+                        ${(c.images || []).slice(0, 20).map(img => {
+                            const path = typeof img === 'string' ? img : img.path;
+                            const thumb = '/api/thumbnail?path=' + encodeURIComponent(path);
+                            return `<div class="result-card" onclick="openModalFromPath('${path.replace(/'/g, "\\'")}')">
+                                <img src="${thumb}" loading="lazy">
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('') + '<button class="cluster-run-btn" onclick="runClustering()">🔄 Re-cluster</button>';
+        }
+
+        function openModalFromPath(path) {
+            document.getElementById('modalImg').src = '/api/image?path=' + encodeURIComponent(path);
+            document.getElementById('modalCaption').textContent = '';
+            document.getElementById('modalPath').textContent = path;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        // --- Chat ---
+        const chatInput = document.getElementById('chatInput');
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendChat();
+        });
+
+        async function sendChat() {
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            const messages = document.getElementById('chatMessages');
+
+            // Add user message
+            messages.innerHTML += `<div class="chat-msg user"><div class="msg-text">${escapeHtml(query)}</div></div>`;
+            chatInput.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Add thinking indicator
+            messages.innerHTML += `<div class="chat-msg assistant" id="chatThinking"><div class="msg-text">Searching... 🔍</div></div>`;
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const r = await fetch('/api/chat?q=' + encodeURIComponent(query));
+                const d = await r.json();
+
+                // Remove thinking
+                document.getElementById('chatThinking')?.remove();
+
+                // Build response
+                let imagesHtml = '';
+                if (d.results && d.results.length > 0) {
+                    imagesHtml = `<div class="msg-images">${d.results.slice(0, 6).map(r => {
+                        const thumb = r.thumbnail || '/api/thumbnail?path=' + encodeURIComponent(r.path);
+                        return `<img src="${thumb}" onclick="openModalFromPath('${r.path.replace(/'/g, "\\'")}')" loading="lazy">`;
+                    }).join('')}</div>`;
+                }
+
+                messages.innerHTML += `
+                    <div class="chat-msg assistant">
+                        <div class="msg-text">${escapeHtml(d.summary)}</div>
+                        ${imagesHtml}
+                    </div>`;
+                messages.scrollTop = messages.scrollHeight;
+            } catch(e) {
+                document.getElementById('chatThinking')?.remove();
+                messages.innerHTML += `<div class="chat-msg assistant"><div class="msg-text">Search failed. Is the server running?</div></div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // --- Timeline ---
+        async function loadTimeline() {
+            const groupBy = document.getElementById('timelineGroup').value;
+            const content = document.getElementById('timelineContent');
+            content.innerHTML = '<div class="empty-state"><p>Loading timeline...</p></div>';
+
+            try {
+                const r = await fetch('/api/timeline?group_by=' + groupBy + '&limit=50');
+                const d = await r.json();
+
+                if (!d.groups || d.groups.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><h2>No dated images</h2><p>Images need EXIF dates or file dates to appear in the timeline</p></div>';
+                    return;
+                }
+
+                content.innerHTML = d.groups.map(g => `
+                    <div class="timeline-group">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">${g.date}</div>
+                        <div class="timeline-count">${g.count} images</div>
+                        <div class="timeline-images">
+                            ${(g.images || []).map(img => {
+                                const thumb = img.thumbnail || '/api/thumbnail?path=' + encodeURIComponent(img.path);
+                                return `<div class="result-card" onclick="openModalFromPath('${img.path.replace(/'/g, "\\'")}')">
+                                    <img src="${thumb}" loading="lazy">
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                content.innerHTML = '<div class="empty-state"><h2>Error loading timeline</h2></div>';
+            }
         }
     </script>
 </body>

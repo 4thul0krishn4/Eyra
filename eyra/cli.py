@@ -584,6 +584,189 @@ def caption(
 
 
 @app.command()
+def cluster(
+    n_clusters: int = typer.Option(None, "--clusters", "-k", help="Number of clusters (auto if omitted)"),
+    show: bool = typer.Option(False, "--show", "-s", help="Show saved clusters without re-clustering"),
+):
+    """Auto-group images by visual similarity using K-Means clustering."""
+    from .clusterer import Clusterer
+
+    _, indexer, _ = get_components()
+    clusterer = Clusterer(indexer)
+
+    if show:
+        result = clusterer.get_clusters()
+        if not result["clusters"]:
+            console.print("[yellow]No clusters found. Run 'eyra cluster' first.[/yellow]")
+            raise typer.Exit(0)
+
+        console.print(f"\n[bold]Eyra Clusters[/bold] ({result['n_clusters']} groups)\n")
+        for c in result["clusters"]:
+            console.print(f"  [cyan]{c['label']}[/cyan] — {c['size']} images")
+            for img in c["images"][:3]:
+                caption = img.get("caption", "")
+                if len(caption) > 50:
+                    caption = caption[:50] + "…"
+                console.print(f"    • {img['filename']} {f'— {caption}' if caption else ''}")
+            if c["size"] > 3:
+                console.print(f"    … and {c['size'] - 3} more")
+            console.print()
+        raise typer.Exit(0)
+
+    console.print(f"\n[bold]Eyra Clustering[/bold]")
+    console.print(f"  Clustering {indexer.count()} images...")
+
+    auto = n_clusters is None
+    result = clusterer.cluster(n_clusters=n_clusters, auto=auto)
+
+    if result.get("error"):
+        console.print(f"[red]Error:[/red] {result['error']}")
+        raise typer.Exit(1)
+
+    console.print(f"\n  Method: {result['method']}")
+    console.print(f"  Found {result['n_clusters']} clusters ({result['total_images']} images)\n")
+
+    for c in result["clusters"]:
+        console.print(f"  [cyan]{c['label']}[/cyan] — {c['size']} images")
+        for path in c["images"][:3]:
+            console.print(f"    • {Path(path).name}")
+        if c["size"] > 3:
+            console.print(f"    … and {c['size'] - 3} more")
+        console.print()
+
+    console.print(f"[green]✅ Clusters saved! View in Web UI or with 'eyra cluster --show'[/green]")
+
+
+@app.command()
+def ocr(
+    reindex: bool = typer.Option(False, "--reindex", "-r", help="Re-OCR images that already have text"),
+    limit: int = typer.Option(0, "--limit", "-n", help="Max images to process (0 = all)"),
+    backend: str = typer.Option("auto", "--backend", help="OCR backend: vision, tesseract, or auto"),
+):
+    """Extract text from images using OCR."""
+    from .ocr import OCREngine
+
+    _, indexer, _ = get_components()
+    meta = indexer.metadata_store
+
+    # Get images needing OCR
+    if reindex:
+        images = meta.list_images(limit=0, offset=0)["images"]
+    else:
+        images = meta.get_unocr()
+
+    if limit > 0:
+        images = images[:limit]
+
+    if not images:
+        console.print("[green]All images already have OCR text. Use --reindex to re-process.[/green]")
+        raise typer.Exit(0)
+
+    console.print(f"\n[bold]Eyra OCR[/bold]")
+    console.print(f"  Backend: {backend}")
+    console.print(f"  Images to process: {len(images)}\n")
+
+    engine = OCREngine(backend=backend)
+    engine.load()
+
+    processed = 0
+    with_text = 0
+    failed = 0
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Extracting text...", total=len(images))
+
+        for img in images:
+            img_path = img["path"]
+            try:
+                result = engine.extract_structured(img_path)
+                meta.update_ocr(img_path, result["text"])
+                processed += 1
+                if result["has_text"]:
+                    with_text += 1
+            except Exception as e:
+                console.print(f"\n  [red]❌ {Path(img_path).name}: {e}[/red]")
+                failed += 1
+
+            progress.advance(task)
+
+    console.print(f"\n[green]✅ Done![/green] Processed: {processed}, With text: {with_text}, Failed: {failed}")
+
+
+@app.command()
+def export(
+    output: str = typer.Argument(..., help="Path to Obsidian vault folder"),
+    copy: bool = typer.Option(False, "--copy", "-c", help="Copy images into vault (default: absolute paths)"),
+    organize: str = typer.Option("tags", "--organize", "-o", help="Organize by: tags, date, or flat"),
+    tag: str = typer.Option(None, "--tag", "-t", help="Only export images with this tag"),
+    no_ocr: bool = typer.Option(False, "--no-ocr", help="Exclude OCR text from notes"),
+    limit: int = typer.Option(0, "--limit", "-n", help="Max images to export (0 = all)"),
+):
+    """Export indexed images to Obsidian-compatible Markdown notes."""
+    from .exporter import ObsidianExporter
+
+    _, indexer, _ = get_components()
+    exporter = ObsidianExporter(indexer.metadata_store)
+
+    console.print(f"\n[bold]Eyra Export[/bold]")
+    console.print(f"  Output: {output}")
+    console.print(f"  Organize by: {organize}")
+    if copy:
+        console.print(f"  Copy images: yes")
+    if tag:
+        console.print(f"  Tag filter: {tag}")
+
+    result = exporter.export(
+        output_dir=output,
+        copy_images=copy,
+        organize_by=organize,
+        include_ocr=not no_ocr,
+        tag_filter=tag,
+        limit=limit,
+    )
+
+    console.print(f"\n[green]✅ Exported {result['exported']} notes ({result['skipped']} skipped)[/green]")
+    console.print(f"  Location: {result['output_dir']}")
+    if result["tags_used"]:
+        console.print(f"  Tags: {', '.join(result['tags_used'][:10])}")
+
+
+@app.command()
+def timeline(
+    group_by: str = typer.Option("month", "--group", "-g", help="Group by: day, month, or year"),
+    limit: int = typer.Option(20, "--limit", "-n", help="Max groups to show"),
+):
+    """Show a timeline of images by date (EXIF/file dates)."""
+    from .metadata import MetadataStore
+
+    meta = MetadataStore()
+    groups = meta.timeline(group_by=group_by, limit=limit)
+
+    if not groups:
+        console.print("[yellow]No dated images found.[/yellow]")
+        raise typer.Exit(0)
+
+    console.print(f"\n[bold]Eyra Timeline[/bold] (by {group_by})\n")
+
+    for g in groups:
+        console.print(f"  [cyan]{g['date']}[/cyan] — {g['count']} images")
+        for img in g["images"][:3]:
+            caption = img.get("caption", "")
+            if len(caption) > 45:
+                caption = caption[:45] + "…"
+            console.print(f"    • {img['filename']} {f'— {caption}' if caption else ''}")
+        if g["count"] > 3:
+            console.print(f"    … and {g['count'] - 3} more")
+        console.print()
+
+
+@app.command()
 def serve(
     host: str = typer.Option(DEFAULT_HOST, "--host", "-h"),
     port: int = typer.Option(DEFAULT_PORT, "--port", "-p"),
