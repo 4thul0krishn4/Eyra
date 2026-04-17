@@ -7,7 +7,7 @@ Instead of relying on filenames or manual organization, Eyra uses vision models 
 ## Features
 
 - Semantic search: find images by describing what you're looking for
-- Auto-tagging: vision models generate tags and captions (Florence-2 or BLIP)
+- Auto-tagging: vision models generate tags and captions (BLIP or Florence-2)
 - Hybrid search: combines vector similarity and keyword matching
 - Visual clustering: auto-group similar images using K-Means on CLIP embeddings
 - OCR: extract text from images (Apple Vision or Tesseract)
@@ -73,7 +73,7 @@ eyra serve                             # Start web UI at localhost:8080
 
 ## Auto-Tagging
 
-Eyra uses Florence-2 (default) or BLIP to generate captions and tags for every image.
+Eyra uses BLIP to generate captions and tags for every image. Florence-2 is also available as an alternative backend.
 
 ```bash
 # Index and caption at the same time
@@ -82,7 +82,7 @@ eyra index ~/Pictures --auto-caption
 # Caption already-indexed images
 eyra caption ~/Pictures
 
-# Use Florence-2 (default) or BLIP
+# Use BLIP (default) or Florence-2
 eyra caption ~/Pictures --backend florence2
 ```
 
@@ -200,7 +200,7 @@ eyra tasks
 
 1. Scan: finds all images in the folder (JPG, PNG, WebP, HEIC, etc.)
 2. Embed: generates CLIP embeddings for each image
-3. Caption: Florence-2 generates captions and tags (optional)
+3. Caption: BLIP generates captions and tags (optional)
 4. Store: embeddings in ChromaDB, metadata in SQLite
 5. Search: hybrid vector + keyword search
 6. Discover: clustering, OCR, timeline, export
@@ -216,7 +216,7 @@ Everything runs on your machine.
 ## Tech Stack
 
 - OpenCLIP: CLIP embeddings for images and text
-- Florence-2 / BLIP: vision models for captioning
+- BLIP / Florence-2: vision models for captioning
 - ChromaDB: local vector database
 - SQLite: metadata storage with FTS5 full-text search
 - scikit-learn: K-Means clustering
