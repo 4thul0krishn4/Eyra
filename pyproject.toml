@@ -46,6 +46,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ocr = ["pytesseract>=0.3.0"]
+vision = ["pyobjc-framework-Vision>=10.0"]
 mlx = ["mlx>=0.5.0", "mlx-vlm>=0.0.5"]
 dev = ["pytest>=7.0.0", "pytest-cov"]
 
